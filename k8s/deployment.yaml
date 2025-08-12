@@ -17,7 +17,7 @@ spec:
       containers:
         - name: ou-website
           # This will be replaced by CI with the real image tag
-          image: DOCKER_IMAGE_PLACEHOLDER
+          image: sharmasam74/ou_website:46ebd74d266e013bddefb28f66cb7cc905ae76a8
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
