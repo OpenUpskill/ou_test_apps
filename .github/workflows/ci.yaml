@@ -4,6 +4,9 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/ou_website
 
@@ -44,7 +47,6 @@ jobs:
         run: |
           IMAGE=${{ env.IMAGE_NAME }}:${{ github.sha }}
           echo "Updating k8s/deployment.yaml -> $IMAGE"
-          # Replace the placeholder in the deployment file
           sed -i "s|DOCKER_IMAGE_PLACEHOLDER|${IMAGE}|g" k8s/deployment.yaml
           git config user.name "github-actions"
           git config user.email "actions@github.com"
