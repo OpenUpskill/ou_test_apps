@@ -1,4 +1,4 @@
-name: Build and Publish OU Website
+name: Build, Push & Update Deployment
 
 on:
   push:
@@ -13,14 +13,11 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Set up QEMU (optional for multi-arch)
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
@@ -32,26 +29,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push image
-        id: build
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
-          labels: |
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.source=${{ github.repositoryUrl }}
-
-      - name: Update k8s deployment with new image
+      - name: Build & Push Docker Image
         run: |
-          IMAGE=${{ env.IMAGE_NAME }}:${{ github.sha }}
-          echo "Updating k8s/deployment.yaml -> $IMAGE"
-          sed -i "s|DOCKER_IMAGE_PLACEHOLDER|${IMAGE}|g" k8s/deployment.yaml
+          IMAGE_TAG=${GITHUB_SHA::7} # Short commit hash
+          docker build -t $IMAGE_NAME:$IMAGE_TAG .
+          docker push $IMAGE_NAME:$IMAGE_TAG
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Update Kubernetes Deployment manifest
+        run: |
+          sed -i "s|image: .*|image: $IMAGE_NAME:${IMAGE_TAG}|g" k8s/deployment.yaml
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add k8s/deployment.yaml
-          git commit -m "ci: update image to ${GITHUB_SHA}" || echo "no changes to commit"
-          git push origin HEAD:main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git commit -m "ci: update image to ${IMAGE_TAG}" || echo "No changes to commit"
+          git push
