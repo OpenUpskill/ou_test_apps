@@ -17,7 +17,7 @@ spec:
       containers:
         - name: ou-website
           # This will be replaced by CI with the real image tag
-          image: sharmasam74/ou_website:46ebd74d266e013bddefb28f66cb7cc905ae76a8
+          image: sharmasam74/ou_website:05104f0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
